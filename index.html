@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game & Emulator Hub</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            padding: 20px;
+        }
+
+        header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .tab-button {
+            padding: 12px 30px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            font-size: 1.1em;
+            cursor: pointer;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .tab-button:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        .tab-button.active {
+            background: white;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .search-container {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .search-box {
+            width: 100%;
+            max-width: 500px;
+            padding: 15px 20px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-box:focus {
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            transform: translateY(-2px);
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .games-grid, .emulators-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .game-card, .emulator-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .game-card:hover, .emulator-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+
+        .game-card h3, .emulator-card h3 {
+            margin-bottom: 10px;
+            color: #667eea;
+            font-size: 1.3em;
+        }
+
+        .game-card p, .emulator-card p {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .emulator-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .emulator-card h3 {
+            color: white;
+        }
+
+        .emulator-card p {
+            color: rgba(255,255,255,0.9);
+        }
+
+        .no-results {
+            text-align: center;
+            color: white;
+            font-size: 1.2em;
+            padding: 40px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .stats {
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2em;
+            }
+
+            .games-grid, .emulators-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 15px;
+            }
+        }
+
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.2em;
+            padding: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎮 Game & Emulator Hub</h1>
+            <p>Browse and play hundreds of games and emulators</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-button active" data-tab="games">Games</button>
+            <button class="tab-button" data-tab="emulators">Emulators</button>
+        </div>
+
+        <div class="search-container">
+            <input type="text" class="search-box" id="searchBox" placeholder="Search games or emulators...">
+        </div>
+
+        <div class="stats" id="stats"></div>
+
+        <div id="games-section" class="content-section active">
+            <div class="games-grid" id="gamesGrid">
+                <div class="loading">Loading games...</div>
+            </div>
+        </div>
+
+        <div id="emulators-section" class="content-section">
+            <div class="emulators-grid" id="emulatorsGrid">
+                <div class="loading">Loading emulators...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Games list
+        const games = [
+            '1v1lol', '2048', 'adarkroom', 'asciispace', 'assessmentexamination', 'asteroids', 'astray',
+            'backcountry', 'baldisbasics', 'basketballlegends', 'basketballstars', 'basketbrosio', 'basketrandom',
+            'bitlife', 'blackholesquare', 'bounceback', 'boxingrandom', 'breaklock', 'breakout', 'btd4',
+            'captaincallisto', 'chess', 'chromaincident', 'chromedino', 'clickerheroes', 'clusterrush', 'connect3',
+            'cookieclicker', 'crossyroad', 'csgoclicker', 'cubefield', 'cubitomayhem', 'cuttherope',
+            'cuttheropeholiday', 'cuttheropetimetravel', 'deathrun3d', 'deepestsword', 'doodlejump', 'doom',
+            'drawthehill', 'drift', 'drifthunters', 'drivemad', 'ducklife', 'ducklife2', 'ducklife3',
+            'ducklife4', 'ducklife5', 'earntodie', 'edgenotfound', 'eggycar', 'evilglitch', 'factoryballsforever',
+            'fireboyandwatergirlforesttemple', 'flappy2048', 'flappybird', 'flappyplane', 'flightsimulator',
+            'fridaynightfunkin', 'friendlyfire', 'fruitninja', 'geometrydash', 'getawayshootoutnew',
+            'gladihoppers', 'googlesnake', 'gopherkart', 'grindcraft', 'hexgl', 'hextris', 'highwaytraffic',
+            'konnekt', 'learntofly', 'letssurf', 'littlealchemy', 'mergeroundracers', 'monkeymart',
+            'motoroadrash3d', 'motox3m', 'ninjavsevilcorp', 'omnombounce', 'ovo', 'ovo2', 'packabunchas',
+            'pacman', 'paperio', 'particleclicker', 'pushback', 'q1k3', 'r3', 'racer', 'radiusraid',
+            'redball4', 'retrobowl', 'retrohaunt', 'riddleschool2', 'ritz', 'roadblocks', 'rooftopsnipers',
+            'run3', 'scrapmetal3', 'shuttledeck', 'sketchbook04', 'sleepingbeauty', 'slitherio', 'slope',
+            'slope2', 'snake', 'snowbattle', 'soccerrandom', 'solitaire', 'spacecompany', 'spacegarden',
+            'spacehuggers', 'spaceinvaders', 'stack', 'stackball', 'stickmanboost', 'stickmanclimb',
+            'stickmangolf', 'stickmanhook', 'stickman-hook', 'stickmansurvival', 'subwaysurfers',
+            'subwaysurfersny', 'subwaysurferssingapore', 'tanukisunset', 'tetris', 'themazeofspacegoblins',
+            'timeshooter', 'timeshooter2', 'timeshooter3', 'tinyfishing', 'tombofthemask', 'topspeedracing3d',
+            'towermaster', 'trimps', 'tunnelrush', 'vex3', 'vex4', 'vex5', 'vex6', 'webecomewhatwebehold',
+            'worldshardestgame2', 'xx142b2exe', 'zombsroyale'
+        ];
+
+        // Emulators list
+        const emulators = [
+            { name: 'RetroArch', path: 'emulators/retroarch/', description: 'Multi-system emulator supporting NES, SNES, Game Boy, PlayStation, and many more classic consoles' },
+            { name: 'Ruffle', path: 'emulators/ruffle/', description: 'Flash player emulator - play classic Flash games and animations' }
+        ];
+
+        // Format game name for display
+        function formatGameName(name) {
+            return name
+                .split(/(?=[A-Z])|[-_]/)
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+        }
+
+        // Create game card
+        function createGameCard(gameName) {
+            const card = document.createElement('a');
+            card.href = `games/${gameName}/index.html`;
+            card.className = 'game-card';
+            card.setAttribute('data-name', gameName.toLowerCase());
+            
+            const title = document.createElement('h3');
+            title.textContent = formatGameName(gameName);
+            
+            const desc = document.createElement('p');
+            desc.textContent = `Play ${formatGameName(gameName)}`;
+            
+            card.appendChild(title);
+            card.appendChild(desc);
+            
+            return card;
+        }
+
+        // Create emulator card
+        function createEmulatorCard(emulator) {
+            const card = document.createElement('a');
+            card.href = emulator.path + 'index.html';
+            card.className = 'emulator-card';
+            card.setAttribute('data-name', emulator.name.toLowerCase());
+            
+            const title = document.createElement('h3');
+            title.textContent = emulator.name;
+            
+            const desc = document.createElement('p');
+            desc.textContent = emulator.description;
+            
+            card.appendChild(title);
+            card.appendChild(desc);
+            
+            return card;
+        }
+
+        // Render games
+        function renderGames(filter = '') {
+            const grid = document.getElementById('gamesGrid');
+            grid.innerHTML = '';
+            
+            const filtered = games.filter(game => 
+                game.toLowerCase().includes(filter.toLowerCase()) ||
+                formatGameName(game).toLowerCase().includes(filter.toLowerCase())
+            );
+            
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="no-results">No games found matching your search.</div>';
+                return;
+            }
+            
+            filtered.forEach(game => {
+                grid.appendChild(createGameCard(game));
+            });
+            
+            updateStats('games', filtered.length);
+        }
+
+        // Render emulators
+        function renderEmulators(filter = '') {
+            const grid = document.getElementById('emulatorsGrid');
+            grid.innerHTML = '';
+            
+            const filtered = emulators.filter(emu => 
+                emu.name.toLowerCase().includes(filter.toLowerCase()) ||
+                emu.description.toLowerCase().includes(filter.toLowerCase())
+            );
+            
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="no-results">No emulators found matching your search.</div>';
+                return;
+            }
+            
+            filtered.forEach(emulator => {
+                grid.appendChild(createEmulatorCard(emulator));
+            });
+            
+            updateStats('emulators', filtered.length);
+        }
+
+        // Update stats
+        function updateStats(type, count) {
+            const statsEl = document.getElementById('stats');
+            const total = type === 'games' ? games.length : emulators.length;
+            statsEl.textContent = `Showing ${count} of ${total} ${type}`;
+        }
+
+        // Tab switching
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const tab = button.getAttribute('data-tab');
+                
+                // Update active tab button
+                document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                
+                // Update active section
+                document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
+                document.getElementById(`${tab}-section`).classList.add('active');
+                
+                // Clear search and re-render
+                document.getElementById('searchBox').value = '';
+                if (tab === 'games') {
+                    renderGames();
+                } else {
+                    renderEmulators();
+                }
+            });
+        });
+
+        // Search functionality
+        document.getElementById('searchBox').addEventListener('input', (e) => {
+            const filter = e.target.value;
+            const activeTab = document.querySelector('.tab-button.active').getAttribute('data-tab');
+            
+            if (activeTab === 'games') {
+                renderGames(filter);
+            } else {
+                renderEmulators(filter);
+            }
+        });
+
+        // Initial render
+        renderGames();
+        renderEmulators();
+    </script>
+</body>
+</html>
